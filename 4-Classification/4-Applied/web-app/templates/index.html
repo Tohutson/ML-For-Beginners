@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuisine Matcher</head>title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css')}}">
+</head>
+<body>
+  <h1>Check your refrigerator. What can you create?</h1>
+  <div id="wrapper">
+      <div class="boxCont">
+          <input type="checkbox" value="4" class="checkbox">
+          <label>apple</label>
+      </div>
+  
+      <div class="boxCont">
+          <input type="checkbox" value="247" class="checkbox">
+          <label>pear</label>
+      </div>
+  
+      <div class="boxCont">
+          <input type="checkbox" value="77" class="checkbox">
+          <label>cherry</label>
+      </div>
+
+      <div class="boxCont">
+          <input type="checkbox" value="126" class="checkbox">
+          <label>fenugreek</label>
+      </div>
+
+      <div class="boxCont">
+          <input type="checkbox" value="302" class="checkbox">
+          <label>sake</label>
+      </div>
+
+      <div class="boxCont">
+          <input type="checkbox" value="327" class="checkbox">
+          <label>soy sauce</label>
+      </div>
+
+      <div class="boxCont">
+          <input type="checkbox" value="112" class="checkbox">
+          <label>cumin</label>
+      </div>
+  </div>
+  <div style="padding-top:10px">
+      <button onClick="startInference()">What kind of cuisine can you make?</button>
+  </div> 
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.9.0/dist/ort.min.js"></script> 
+  <script>
+    const ingredients = Array(380).fill(0);
+    
+    const checks = [...document.querySelectorAll('.checkbox')];
+    
+    checks.forEach(check => {
+        check.addEventListener('change', function() {
+            // toggle the state of the ingredient
+            // based on the checkbox's value (1 or 0)
+            ingredients[check.value] = check.checked ? 1 : 0;
+        });
+    });
+
+    function testCheckboxes() {
+        // validate if at least one checkbox is checked
+        return checks.some(check => check.checked);
+    }
+
+    async function startInference() {
+
+        let atLeastOneChecked = testCheckboxes()
+
+        if (!atLeastOneChecked) {
+            alert('Please select at least one ingredient.');
+            return;
+        }
+        try {
+            // create a new session and load the model.
+            
+            const session = await ort.InferenceSession.create('./model.onnx');
+
+            const input = new ort.Tensor(new Float32Array(ingredients), [1, 380]);
+            const feeds = { float_input: input };
+
+            // feed inputs and run
+            const results = await session.run(feeds);
+
+            // read from results
+            alert('You can enjoy ' + results.label.data[0] + ' cuisine today!')
+
+        } catch (e) {
+            console.log(`failed to inference ONNX model`);
+            console.error(e);
+        }
+    }
+           
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
